@@ -1,7 +1,40 @@
-node_modules/
-.env
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.backup
+pom.xml.restoreBackup
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Eclipse
+.settings/
+.classpath
+.project
+.factorypath
+
+# VS Code
+.vscode/
+
+# OS
 .DS_Store
-npm-cache/
-dist/
-build/
+Thumbs.db
+
+# Log files
 *.log
+
+# Sensitive information
+.env
+*.env.*
+.api-key
+*.key
+credentials/

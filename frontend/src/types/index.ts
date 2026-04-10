@@ -1,5 +1,3 @@
-export type SituationMode = 'commute' | 'bed' | 'free';
-
 export interface OttPlatform {
   id: string;
   name: string;
@@ -23,7 +21,7 @@ export interface Content {
 export interface RecommendationParams {
   time: number;
   otts: string[];
-  mode: SituationMode;
+  genre?: number[];
 }
 
 export interface DailyPlan {
