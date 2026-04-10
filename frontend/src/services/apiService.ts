@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
 export interface RecommendationResponse {
   success: boolean;
@@ -16,10 +16,14 @@ export interface RecommendationResponse {
 export const getRecommendations = async (
   time: number,
   otts: string[],
-  mode: string
+  genre?: number[]
 ): Promise<RecommendationResponse> => {
   const ottsParam = otts.join(',');
-  const url = `${API_BASE_URL}/contents/recommend?time=${time}&otts=${ottsParam}&mode=${mode}`;
+  let url = `${API_BASE_URL}/contents/recommend?time=${time}&otts=${ottsParam}`;
+  
+  if (genre && genre.length > 0) {
+    url += `&genre=${genre.join(',')}`;
+  }
 
   const response = await fetch(url);
   if (!response.ok) {

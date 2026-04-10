@@ -5,9 +5,21 @@ import ContentCard from '../components/common/ContentCard';
 import Loading from '../components/common/Loading';
 import EmptyState from '../components/common/EmptyState';
 import SectionHeader from '../components/common/SectionHeader';
-import { SituationMode, Content } from '../types';
+import { Content } from '../types';
 import { getRecommendations } from '../services/apiService';
-import { ArrowLeft, Filter, Bus, Moon, Coffee, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Filter, Tag, AlertCircle } from 'lucide-react';
+
+const GENRE_LABELS: Record<number, string> = {
+  0: '상관없음',
+  28: '액션',
+  35: '코미디',
+  10749: '로맨스',
+  53: '스릴러',
+  27: '공포',
+  16: '애니메이션',
+  878: 'SF',
+  14: '판타지',
+};
 
 const ResultPage = () => {
   const [searchParams] = useSearchParams();
@@ -19,14 +31,18 @@ const ResultPage = () => {
   const time = parseInt(searchParams.get('time') || '0');
   const ottsString = searchParams.get('otts') || '';
   const otts = ottsString ? ottsString.split(',') : [];
-  const mode = (searchParams.get('mode') || 'free') as SituationMode;
+  const genreParam = searchParams.get('genre');
+  const genres = useMemo(() => {
+    if (!genreParam) return [0];
+    return genreParam.split(',').map(id => parseInt(id));
+  }, [genreParam]);
 
   useEffect(() => {
     const fetchContents = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await getRecommendations(time, otts, mode);
+        const response = await getRecommendations(time, otts, genres.includes(0) ? undefined : genres);
         if (response.success) {
           // 백엔드 데이터를 프론트엔드 Content 인터페이스로 변환
           const mappedContents: Content[] = response.data.map(item => ({
@@ -57,13 +73,14 @@ const ResultPage = () => {
       fetchContents();
     }
     window.scrollTo(0, 0);
-  }, [time, ottsString, mode]);
+  }, [time, ottsString, genres]);
 
-  const modeInfo = {
-    commute: { label: '출퇴근 모드', icon: <Bus size={14} /> },
-    bed: { label: '자기 전 모드', icon: <Moon size={14} /> },
-    free: { label: '자유 시청 모드', icon: <Coffee size={14} /> },
-  }[mode];
+  const genreDisplayLabel = useMemo(() => {
+    if (genres.includes(0)) return '전체 장르';
+    if (genres.length === 1) return GENRE_LABELS[genres[0]] || '전체';
+    if (genres.length > 1) return `${GENRE_LABELS[genres[0]]} 외 ${genres.length - 1}개`;
+    return '전체';
+  }, [genres]);
 
   if (isLoading) return <MainLayout><Loading fullScreen message={`선택하신 ${time}분에 딱 맞는 명작을 찾는 중...`} /></MainLayout>;
 
@@ -117,9 +134,9 @@ const ResultPage = () => {
                 <div className="w-px h-3 bg-white/20" />
                 <span>{otts.length === 0 ? '전체 OTT' : `${otts.length}개 OTT`}</span>
               </div>
-              <div className="px-5 py-2.5 rounded-2xl bg-accent-red/10 border border-accent-red/20 text-sm font-bold flex items-center gap-2 text-accent-red shadow-lg shadow-accent-red/5">
-                {modeInfo.icon}
-                <span>{modeInfo.label}</span>
+              <div className="px-5 py-2.5 rounded-2xl bg-accent-red/10 border border-accent-red/20 text-sm font-bold flex items-center gap-2 text-accent-red shadow-lg shadow-accent-red/5" title={genres.filter(g => g !== 0).map(g => GENRE_LABELS[g]).join(', ')}>
+                <Tag size={14} />
+                <span>{genreDisplayLabel}</span>
               </div>
             </div>
           </div>

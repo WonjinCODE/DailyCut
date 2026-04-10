@@ -5,26 +5,31 @@ import Features from '../components/home/Features';
 import HowToUse from '../components/home/HowToUse';
 import OttSelector from '../components/home/OttSelector';
 import TimeInput from '../components/home/TimeInput';
-import SituationModeSelector from '../components/home/SituationModeSelector';
+import GenreSelector from '../components/home/GenreSelector';
 import Button from '../components/common/Button';
 import Card from '../components/common/Card';
 import SectionHeader from '../components/common/SectionHeader';
 import { useNavigate } from 'react-router-dom';
-import { SituationMode } from '../types';
 
 const HomePage = () => {
   const navigate = useNavigate();
   const [selectedOtts, setSelectedOtts] = useState<string[]>([]);
   const [time, setTime] = useState<number>(0);
-  const [selectedMode, setSelectedMode] = useState<SituationMode>('free');
+  const [selectedGenres, setSelectedGenres] = useState<number[]>([0]);
 
   const handleStartRecommendation = () => {
-    if (selectedOtts.length === 0 || time === 0) return;
+    if (!isFormValid) return;
     const ottsParam = selectedOtts.join(',');
-    navigate(`/result?time=${time}&otts=${ottsParam}&mode=${selectedMode}`);
+    let url = `/result?time=${time}&otts=${ottsParam}`;
+    
+    const actualGenres = selectedGenres.filter(g => g !== 0);
+    if (actualGenres.length > 0) {
+      url += `&genre=${actualGenres.join(',')}`;
+    }
+    navigate(url);
   };
 
-  const isFormValid = selectedOtts.length > 0 && time > 0;
+  const isFormValid = selectedOtts.length > 0 && time > 0 && selectedGenres.length > 0;
 
   return (
     <MainLayout>
@@ -40,7 +45,7 @@ const HomePage = () => {
             />
 
             <div className="space-y-16">
-              <SituationModeSelector selectedMode={selectedMode} onChange={setSelectedMode} />
+              <GenreSelector selectedGenres={selectedGenres} onChange={setSelectedGenres} />
               <TimeInput time={time} onChange={setTime} />
               <OttSelector selectedOtts={selectedOtts} onChange={setSelectedOtts} />
 
@@ -55,6 +60,7 @@ const HomePage = () => {
                 </Button>
                 {!isFormValid && (
                   <p className="text-center text-xs text-slate-500 mt-4 italic">
+                    {selectedGenres.length === 0 ? '장르를 선택하고 ' : ''}
                     {time === 0 ? '시간을 입력하고 ' : ''}
                     {selectedOtts.length === 0 ? '플랫폼을 선택하면 ' : ''}
                     버튼이 활성화됩니다.
