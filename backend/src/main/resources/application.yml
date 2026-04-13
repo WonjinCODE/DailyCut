@@ -1,6 +1,23 @@
+
 server:
   port: 8080
 
 tmdb:
   api-url: "https://api.themoviedb.org/3"
   api-key: "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIwZTI2ZjE4NjI5ZmVmMDE2NzNlMmIxZWVlYjUxMWFhMSIsIm5iZiI6MTc3MzcyMTM3Ni41NDIsInN1YiI6IjY5YjhkNzIwMTY5OWIxZjhjN2E2NDFiZSIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.7d4eLyomSr7NdnzOdR-UGWw7orzJqeV7UtQY36R23yc"
+
+
+spring:
+  datasource:
+    driver-class-name: org.mariadb.jdbc.Driver
+    url: jdbc:mariadb://localhost:3306/dailycut
+    username: root
+    password: 1234
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
