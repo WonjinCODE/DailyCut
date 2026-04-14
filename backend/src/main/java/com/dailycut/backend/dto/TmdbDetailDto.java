@@ -1,17 +1,27 @@
 package com.dailycut.backend.dto;
-
+ 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
-
+ 
 public class TmdbDetailDto {
+ 
     private Integer runtime;
+ 
     @JsonProperty("episode_run_time")
     private List<Integer> episodeRunTime;
-
+ 
+    @JsonProperty("vote_average")
+    private Double voteAverage;
+ 
+    private Double popularity;
+ 
     public TmdbDetailDto() {}
+ 
     public Integer getRuntime() { return runtime; }
     public List<Integer> getEpisodeRunTime() { return episodeRunTime; }
-
+    public Double getVoteAverage() { return voteAverage; }
+    public Double getPopularity() { return popularity; }
+ 
     public Integer getEffectiveRuntime() {
         if (runtime != null && runtime > 0) return runtime;
         if (episodeRunTime != null && !episodeRunTime.isEmpty()) return episodeRunTime.get(0);
