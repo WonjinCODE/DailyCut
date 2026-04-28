@@ -14,6 +14,36 @@ declare global {
 export default function DifyChatbot() {
   useEffect(() => {
     const token = "XWqIgIlkyKNeVRpx";
+    let observer: MutationObserver | null = null;
+
+    const applyDifyChatbotPosition = () => {
+      const button = document.getElementById("dify-chatbot-bubble-button");
+      const chatWindow = document.getElementById("dify-chatbot-bubble-window");
+      const scrollY = window.scrollY || window.pageYOffset;
+      const viewportHeight = window.innerHeight;
+      const rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+      const chatWindowHeight = 40 * rootFontSize;
+
+      if (button) {
+        button.style.setProperty("position", "absolute", "important");
+        button.style.setProperty("right", "24px", "important");
+        button.style.setProperty("top", `${scrollY + viewportHeight - 72}px`, "important");
+        button.style.setProperty("bottom", "auto", "important");
+      }
+
+      if (chatWindow) {
+        chatWindow.style.setProperty("position", "absolute", "important");
+        chatWindow.style.setProperty("right", "24px", "important");
+        chatWindow.style.setProperty("top", `${scrollY + viewportHeight - chatWindowHeight - 90}px`, "important");
+        chatWindow.style.setProperty("bottom", "auto", "important");
+        chatWindow.style.setProperty("width", "24rem", "important");
+        chatWindow.style.setProperty("height", "40rem", "important");
+      }
+    };
+
+    const scheduleDifyChatbotPosition = () => {
+      window.requestAnimationFrame(applyDifyChatbotPosition);
+    };
 
     window.difyChatbotConfig = {
       token,
@@ -44,9 +74,9 @@ export default function DifyChatbot() {
       style.id = "dify-chatbot-style";
       style.innerHTML = `
         #dify-chatbot-bubble-button {
-        position: fixed !important;
+        position: absolute !important;
         right: 24px !important;
-        bottom: 24px !important;
+        top: calc(100vh - 72px) !important;
         background-color: #1C64F2 !important;
         z-index: 2147483647 !important;
         display: flex !important;
@@ -55,9 +85,9 @@ export default function DifyChatbot() {
       }
 
       #dify-chatbot-bubble-window {
-        position: fixed !important;
+        position: absolute !important;
         right: 24px !important;
-        bottom: 90px !important;
+        top: calc(100vh - 40rem - 90px) !important;
         width: 24rem !important;
         height: 40rem !important;
         z-index: 2147483647 !important;
@@ -65,6 +95,21 @@ export default function DifyChatbot() {
     `;
       document.head.appendChild(style);
     }
+
+    observer = new MutationObserver(() => {
+      scheduleDifyChatbotPosition();
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["style"] });
+    window.addEventListener("scroll", scheduleDifyChatbotPosition, { passive: true });
+    window.addEventListener("resize", scheduleDifyChatbotPosition);
+    scheduleDifyChatbotPosition();
+
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("scroll", scheduleDifyChatbotPosition);
+      window.removeEventListener("resize", scheduleDifyChatbotPosition);
+    };
   }, []);
 
   return null;
