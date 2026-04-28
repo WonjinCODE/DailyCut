@@ -5,7 +5,7 @@ import BingeCalcPage from './pages/BingeCalcPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import MyPage from './pages/MyPage';
-import DifyChatbot from "./components/common/DifyChatbot"; // 챗봇
+
 
 // 404 페이지
 const NotFoundPage = () => (
@@ -17,9 +17,6 @@ const NotFoundPage = () => (
 function App() {
   return (
     <Router>
-      {/* ⭐ 여기 추가 (중요) */}
-      <DifyChatbot />
-
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/recommend" element={<HomePage />} />
