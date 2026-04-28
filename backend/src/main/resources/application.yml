@@ -1,6 +1,31 @@
+
 server:
   port: 8080
 
 tmdb:
   api-url: "https://api.themoviedb.org/3"
   api-key: "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIwZTI2ZjE4NjI5ZmVmMDE2NzNlMmIxZWVlYjUxMWFhMSIsIm5iZiI6MTc3MzcyMTM3Ni41NDIsInN1YiI6IjY5YjhkNzIwMTY5OWIxZjhjN2E2NDFiZSIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.7d4eLyomSr7NdnzOdR-UGWw7orzJqeV7UtQY36R23yc"
+
+
+spring:
+  datasource:
+    driver-class-name: org.mariadb.jdbc.Driver
+    url: jdbc:mariadb://13.222.129.60:3306/Dailycut
+    username: admin
+    password: 9187
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+jwt:
+  # 보안을 위해 반드시 256비트(32바이트) 이상의 긴 문자열을 사용해야 합니다.
+  secret: DailyCutSecretKeyForJwtAuthenticationMustBeLongEnough1234567890
+  # Access Token 만료 시간 (1시간 = 3600000ms)
+  access-expiration: 3600000
+  # Refresh Token 만료 시간 (7일 = 604800000ms)
+  refresh-expiration: 604800000
