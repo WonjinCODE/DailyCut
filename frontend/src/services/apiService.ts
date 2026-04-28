@@ -31,3 +31,36 @@ export const getRecommendations = async (
   }
   return response.json();
 };
+
+// 마이페이지 응답 데이터 타입 정의
+export interface MyPageData {
+  email: string;
+  nickname: string;
+  subscribedOtts: string[];
+  preferredGenres: string[];
+}
+
+// 마이페이지 정보 가져오기 (토큰 필요)
+export const getMyPageInfo = async (): Promise<MyPageData> => {
+  // 1. 로컬 스토리지에서 로그인할 때 저장해둔 토큰을 꺼냅니다.
+  const token = localStorage.getItem('accessToken'); 
+  
+  const url = `${API_BASE_URL}/users/me`;
+
+  // 2. fetch 요청 시 headers에 토큰을 담아서 보냅니다.
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`, // ✨ 핵심: 백엔드에 나임을 증명하는 신분증!
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('마이페이지 데이터를 불러오는데 실패했습니다.');
+  }
+
+  const result = await response.json();
+  // 백엔드에서 ApiResponseDto.success(response) 형태로 감싸서 보냈으므로 .data로 꺼냅니다.
+  return result.data; 
+};

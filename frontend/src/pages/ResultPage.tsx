@@ -35,6 +35,7 @@ const ResultPage = () => {
   const genres = useMemo(() => {
     if (!genreParam) return [0];
     return genreParam.split(',').map(id => parseInt(id));
+
   }, [genreParam]);
 
   useEffect(() => {

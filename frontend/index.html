@@ -8,6 +8,86 @@
     <!-- Pretendard 폰트 추가 -->
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
   </head>
+  <script>
+  window.difyChatbotConfig = {
+    token: 'XWqIgIlkyKNeVRpx',
+    inputs: {},
+    systemVariables: {},
+    userVariables: {},
+  }
+
+  const applyDifyChatbotPosition = () => {
+    const button = document.getElementById('dify-chatbot-bubble-button');
+    const chatWindow = document.getElementById('dify-chatbot-bubble-window');
+    const scrollY = window.scrollY || window.pageYOffset;
+    const viewportHeight = window.innerHeight;
+    const rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    const chatWindowHeight = 40 * rootFontSize;
+
+    if (button) {
+      button.style.setProperty('position', 'absolute', 'important');
+      button.style.setProperty('right', '24px', 'important');
+      button.style.setProperty('top', `${scrollY + viewportHeight - 72}px`, 'important');
+      button.style.setProperty('bottom', 'auto', 'important');
+    }
+
+    if (chatWindow) {
+      chatWindow.style.setProperty('position', 'absolute', 'important');
+      chatWindow.style.setProperty('right', '24px', 'important');
+      chatWindow.style.setProperty('top', `${scrollY + viewportHeight - chatWindowHeight - 90}px`, 'important');
+      chatWindow.style.setProperty('bottom', 'auto', 'important');
+      chatWindow.style.setProperty('width', '24rem', 'important');
+      chatWindow.style.setProperty('height', '40rem', 'important');
+    }
+  };
+
+  const scheduleDifyChatbotPosition = () => {
+    window.requestAnimationFrame(applyDifyChatbotPosition);
+  };
+
+  const difyObserver = new MutationObserver(() => {
+    scheduleDifyChatbotPosition();
+  });
+
+  const initializeDifyChatbotPosition = () => {
+    scheduleDifyChatbotPosition();
+    difyObserver.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style'] });
+    window.addEventListener('scroll', scheduleDifyChatbotPosition, { passive: true });
+    window.addEventListener('resize', scheduleDifyChatbotPosition);
+    window.addEventListener('load', scheduleDifyChatbotPosition);
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeDifyChatbotPosition, { once: true });
+  } else {
+    initializeDifyChatbotPosition();
+  }
+</script>
+
+<script
+  src="https://udify.app/embed.min.js"
+  id="XWqIgIlkyKNeVRpx"
+  defer>
+</script>
+
+<style>
+  #dify-chatbot-bubble-button {
+    position: absolute !important;
+    right: 24px !important;
+    top: calc(100vh - 72px) !important;
+    background-color: #E50914 !important;
+    z-index: 2147483647 !important;
+  }
+
+  #dify-chatbot-bubble-window {
+    position: absolute !important;
+    right: 24px !important;
+    top: calc(100vh - 40rem - 90px) !important;
+    width: 24rem !important;
+    height: 40rem !important;
+    z-index: 2147483647 !important;
+  }
+</style>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>

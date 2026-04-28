@@ -86,4 +86,4 @@ def debug_links():
             {"text": a.get_text(strip=True), "href": a["href"], "class": a.get("class")}
             for a in links[:30]
         ]
-    }
+    }9;
