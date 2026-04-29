@@ -5,12 +5,19 @@ export interface OttPlatform {
   logoText: string;
 }
 
+export interface WatchLink {
+  providerCode: string;
+  providerName: string;
+  url: string;
+}
+
 export interface Content {
   id: string;
   title: string;
   posterUrl: string;
   runtime: number;
   platforms: string[];
+  watchLinks?: WatchLink[];
   type: 'movie' | 'drama';
   rating: number;
   genre?: string[];

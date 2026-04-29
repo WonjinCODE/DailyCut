@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
 import ContentCard from '../components/common/ContentCard';
@@ -8,6 +8,7 @@ import SectionHeader from '../components/common/SectionHeader';
 import { Content } from '../types';
 import { getRecommendations } from '../services/apiService';
 import { ArrowLeft, Filter, Tag, AlertCircle } from 'lucide-react';
+import { buildOttWatchLinks, normalizeOttProviderCodes } from '../utils/ottSearchLinks';
 
 const GENRE_LABELS: Record<number, string> = {
   0: '상관없음',
@@ -30,7 +31,10 @@ const ResultPage = () => {
   
   const time = parseInt(searchParams.get('time') || '0');
   const ottsString = searchParams.get('otts') || '';
-  const otts = ottsString ? ottsString.split(',') : [];
+  const otts = useMemo(
+    () => normalizeOttProviderCodes(ottsString ? ottsString.split(',') : []),
+    [ottsString]
+  );
   const genreParam = searchParams.get('genre');
   const genres = useMemo(() => {
     if (!genreParam) return [0];
@@ -46,18 +50,27 @@ const ResultPage = () => {
         const response = await getRecommendations(time, otts, genres.includes(0) ? undefined : genres);
         if (response.success) {
           // 백엔드 데이터를 프론트엔드 Content 인터페이스로 변환
-          const mappedContents: Content[] = response.data.map(item => ({
-            id: String(item.id),
-            title: item.title,
-            posterUrl: item.posterUrl,
-            // 백엔드에서 runtime 정보가 없으므로 요청한 시간(time)을 기준으로 대략 할당
-            runtime: item.type === 'movie' ? Math.min(time, 120) : 30, 
-            platforms: otts.length > 0 ? otts : ['netflix'], // 선택한 OTT가 있으면 표시
-            type: item.type === 'movie' ? 'movie' : 'drama',
-            // popularity를 0-10 사이의 rating으로 대략 변환 (임시)
-            rating: Math.min(9.9, Math.max(1.0, (item.popularity / 1000) * 10)).toFixed(1) as any,
-            summary: item.overview
-          }));
+          const mappedContents: Content[] = response.data.map((item) => {
+            const fallbackRating = Math.min(9.9, Math.max(1.0, ((item.popularity ?? 0) / 1000) * 10));
+            const resolvedPlatforms = item.watchLinks?.length
+              ? normalizeOttProviderCodes(item.watchLinks.map((watchLink) => watchLink.providerCode))
+              : otts;
+            const watchLinks = item.watchLinks?.length
+              ? item.watchLinks
+              : buildOttWatchLinks(resolvedPlatforms, item.title);
+
+            return {
+              id: String(item.id),
+              title: item.title,
+              posterUrl: item.posterUrl,
+              runtime: item.runtime && item.runtime > 0 ? item.runtime : (item.type === 'movie' ? Math.min(time, 120) : 30),
+              platforms: resolvedPlatforms,
+              watchLinks,
+              type: item.type === 'movie' ? 'movie' : 'drama',
+              rating: Number((item.tmdbRating ?? fallbackRating).toFixed(1)),
+              summary: item.overview
+            };
+          });
           setContents(mappedContents);
         } else {
           setError('추천 데이터를 불러오는데 실패했습니다.');
@@ -74,7 +87,7 @@ const ResultPage = () => {
       fetchContents();
     }
     window.scrollTo(0, 0);
-  }, [time, ottsString, genres]);
+  }, [time, otts, genres]);
 
   const genreDisplayLabel = useMemo(() => {
     if (genres.includes(0)) return '전체 장르';

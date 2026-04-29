@@ -1,16 +1,24 @@
+import type { WatchLink } from '../types';
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+
+export interface RecommendationItem {
+  id: number;
+  type: 'movie' | 'tv';
+  title: string;
+  posterUrl: string;
+  overview: string;
+  popularity: number;
+  genreIds?: number[];
+  genre_ids?: number[];
+  runtime?: number;
+  tmdbRating?: number | null;
+  watchLinks?: WatchLink[];
+}
 
 export interface RecommendationResponse {
   success: boolean;
-  data: Array<{
-    id: number;
-    type: 'movie' | 'tv';
-    title: string;
-    posterUrl: string;
-    overview: string;
-    popularity: number;
-    genre_ids: number[];
-  }>;
+  data: RecommendationItem[];
 }
 
 export const getRecommendations = async (

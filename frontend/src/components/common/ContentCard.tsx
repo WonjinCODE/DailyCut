@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Content } from '../../types';
 import { OTT_PLATFORMS } from '../home/OttSelector';
+import { normalizeOttProviderCode } from '../../utils/ottSearchLinks';
 // ⭐ 평가용 아이콘(ThumbsUp, Eye, ThumbsDown) 추가
 import { PlayCircle, Clock, Star, ThumbsUp, Eye, ThumbsDown } from 'lucide-react';
 import { cn } from './Button';
@@ -30,6 +31,16 @@ const ContentCard: React.FC<ContentCardProps> = ({ content, availableTime, class
     
     // 일단 화면에서 잘 눌리는지 확인하기 위한 알림창
     alert(`[${content.title}] 콘텐츠를 '${type}' 처리했습니다!\n(나중에 백엔드 API와 연결될 예정입니다.)`);
+  };
+
+  const handleOttSearchClick = (e: React.MouseEvent<HTMLButtonElement>, url: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
+    if (newWindow) {
+      newWindow.opener = null;
+    }
   };
 
   // 여유 시간에 따른 뱃지 스타일 계산
@@ -91,10 +102,11 @@ const ContentCard: React.FC<ContentCardProps> = ({ content, availableTime, class
         <div className="flex items-center gap-2 mb-2">
           <div className="flex -space-x-1">
             {content.platforms.map(pId => {
-              const platform = OTT_PLATFORMS.find(p => p.id === pId);
+              const normalizedPlatformId = normalizeOttProviderCode(pId) ?? pId;
+              const platform = OTT_PLATFORMS.find(p => p.id === normalizedPlatformId);
               return platform ? (
                 <div 
-                  key={pId} 
+                  key={`${content.id}-${normalizedPlatformId}`} 
                   className="w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-black text-white border border-dark"
                   style={{ backgroundColor: platform.color }}
                   title={platform.name}
@@ -120,6 +132,31 @@ const ContentCard: React.FC<ContentCardProps> = ({ content, availableTime, class
             <Star size={10} fill="currentColor" />
             <span>{content.rating}</span>
           </div>
+        </div>
+
+        <div className="mt-4 pt-4 border-t border-white/10">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+            OTT에서 바로 검색
+          </p>
+          {content.watchLinks && content.watchLinks.length > 0 ? (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {content.watchLinks.map((watchLink) => (
+                <button
+                  key={`${content.id}-${watchLink.providerCode}`}
+                  type="button"
+                  onClick={(e) => handleOttSearchClick(e, watchLink.url)}
+                  className="px-2.5 py-1.5 rounded-lg border border-white/10 bg-white/5 text-[11px] font-semibold text-slate-200 hover:border-accent-red/40 hover:text-white hover:bg-accent-red/10 transition-colors"
+                  title={`${watchLink.providerName}에서 ${content.title} 검색`}
+                >
+                  {watchLink.providerName}에서 보기
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-2 text-[11px] text-slate-500">
+              선택한 OTT에서 검색 가능한 링크가 없습니다.
+            </p>
+          )}
         </div>
 
         {/* ⭐ 로그인한 유저에게만 보이는 평가 버튼 영역 */}

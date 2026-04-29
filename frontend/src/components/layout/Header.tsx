@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Play } from 'lucide-react';
 
 const Header = () => {
-  const navigate = useNavigate();
   // 로그인 상태와 닉네임을 저장할 공간 (state)
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [nickname, setNickname] = useState('');
