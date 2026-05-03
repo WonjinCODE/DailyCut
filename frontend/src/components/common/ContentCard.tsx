@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Content } from '../../types';
 import { OTT_PLATFORMS } from '../home/OttSelector';
 import { normalizeOttProviderCode } from '../../utils/ottSearchLinks';
+import { evaluateContent } from '../../services/apiService';
 // ⭐ 평가용 아이콘(ThumbsUp, Eye, ThumbsDown) 추가
 import { PlayCircle, Clock, Star, ThumbsUp, Eye, ThumbsDown } from 'lucide-react';
 import { cn } from './Button';
@@ -12,9 +13,12 @@ interface ContentCardProps {
   className?: string;
 }
 
+type EvaluationType = 'LIKE' | 'WATCHED' | 'DISLIKE';
+
 const ContentCard: React.FC<ContentCardProps> = ({ content, availableTime, className }) => {
   // ⭐ 로그인 상태를 확인하기 위한 state
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [pendingEvaluation, setPendingEvaluation] = useState<EvaluationType | null>(null);
 
   useEffect(() => {
     // 브라우저 금고에 토큰이 있는지 확인
@@ -25,12 +29,34 @@ const ContentCard: React.FC<ContentCardProps> = ({ content, availableTime, class
   }, []);
 
   // ⭐ 평가 버튼을 클릭했을 때 실행되는 임시 함수
-  const handleEvaluation = (e: React.MouseEvent, type: string) => {
+  const handleEvaluation = async (e: React.MouseEvent, evaluationType: EvaluationType) => {
     e.preventDefault(); // 카드 전체 클릭 방지
     e.stopPropagation(); 
-    
-    // 일단 화면에서 잘 눌리는지 확인하기 위한 알림창
-    alert(`[${content.title}] 콘텐츠를 '${type}' 처리했습니다!\n(나중에 백엔드 API와 연결될 예정입니다.)`);
+
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      setIsLoggedIn(false);
+      alert('로그인이 필요한 기능입니다.');
+      return;
+    }
+
+    try {
+      setPendingEvaluation(evaluationType);
+      const message = await evaluateContent(content.id, {
+        evaluationType,
+        title: content.title,
+        type: content.sourceType ?? (content.type === 'movie' ? 'movie' : 'tv'),
+        genreIds: content.genreIds ?? [],
+        posterUrl: content.posterUrl,
+        runtime: content.runtime,
+      });
+      alert(message);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '반응 저장 중 오류가 발생했습니다.';
+      alert(message);
+    } finally {
+      setPendingEvaluation(null);
+    }
   };
 
   const handleOttSearchClick = (e: React.MouseEvent<HTMLButtonElement>, url: string) => {
@@ -163,8 +189,10 @@ const ContentCard: React.FC<ContentCardProps> = ({ content, availableTime, class
         {isLoggedIn && (
           <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between">
             <button 
-              onClick={(e) => handleEvaluation(e, '볼거에요')} 
-              className="flex flex-col items-center gap-1 text-slate-400 hover:text-accent-red transition-colors group/btn"
+              type="button"
+              onClick={(e) => handleEvaluation(e, 'LIKE')} 
+              disabled={pendingEvaluation !== null}
+              className="flex flex-col items-center gap-1 text-slate-400 hover:text-accent-red transition-colors group/btn disabled:opacity-50 disabled:cursor-not-allowed"
               title="찜하기"
             >
               <ThumbsUp size={16} className="group-hover/btn:scale-110 transition-transform" />
@@ -172,8 +200,10 @@ const ContentCard: React.FC<ContentCardProps> = ({ content, availableTime, class
             </button>
             
             <button 
-              onClick={(e) => handleEvaluation(e, '봤어요')} 
-              className="flex flex-col items-center gap-1 text-slate-400 hover:text-blue-400 transition-colors group/btn"
+              type="button"
+              onClick={(e) => handleEvaluation(e, 'WATCHED')} 
+              disabled={pendingEvaluation !== null}
+              className="flex flex-col items-center gap-1 text-slate-400 hover:text-blue-400 transition-colors group/btn disabled:opacity-50 disabled:cursor-not-allowed"
               title="이미 본 콘텐츠"
             >
               <Eye size={16} className="group-hover/btn:scale-110 transition-transform" />
@@ -181,8 +211,10 @@ const ContentCard: React.FC<ContentCardProps> = ({ content, availableTime, class
             </button>
 
             <button 
-              onClick={(e) => handleEvaluation(e, '별로에요')} 
-              className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-300 transition-colors group/btn"
+              type="button"
+              onClick={(e) => handleEvaluation(e, 'DISLIKE')} 
+              disabled={pendingEvaluation !== null}
+              className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-300 transition-colors group/btn disabled:opacity-50 disabled:cursor-not-allowed"
               title="추천 안 함"
             >
               <ThumbsDown size={16} className="group-hover/btn:scale-110 transition-transform" />

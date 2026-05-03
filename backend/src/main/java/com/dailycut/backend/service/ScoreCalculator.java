@@ -1,5 +1,7 @@
 package com.dailycut.backend.service;
  
+import com.dailycut.backend.domain.enums.InteractionType;
+import com.dailycut.backend.entity.UserInteraction;
 import org.springframework.stereotype.Component;
  
 import java.util.Collections;
@@ -84,9 +86,59 @@ public class ScoreCalculator {
         return (scoreT >= 40.0 && scoreG >= 12.0) ? 5.0 : 0.0;
     }
  
-    // U(c) — 사용자 반응 보정 (MVP: 0점 고정)
-    public double calculateU(double adjustmentScore) {
-        return adjustmentScore;
+    public double calculateU(String candidateContentId, List<Integer> candidateGenreIds, List<UserInteraction> interactions) {
+        if (interactions == null || interactions.isEmpty()) {
+            return 0.0;
+        }
+
+        double adjustmentScore = 0.0;
+
+        for (UserInteraction interaction : interactions) {
+            boolean sameContent = candidateContentId.equals(interaction.getContentId());
+            boolean relatedByGenre = hasGenreAffinity(candidateGenreIds, interaction.getParsedGenreIds());
+
+            if (interaction.getInteractionType() == InteractionType.WATCHED) {
+                if (relatedByGenre) {
+                    adjustmentScore += 3.0;
+                }
+                continue;
+            }
+
+            if (interaction.getInteractionType() == InteractionType.LIKE) {
+                if (relatedByGenre) {
+                    adjustmentScore += 5.0;
+                }
+                continue;
+            }
+
+            if (interaction.getInteractionType() == InteractionType.DISLIKE) {
+                if (sameContent) {
+                    adjustmentScore -= 10.0;
+                } else if (relatedByGenre) {
+                    adjustmentScore -= 5.0;
+                }
+            }
+        }
+
+        // 여러 반응이 누적되더라도 점수가 과도하게 치우치지 않도록 MVP 단계에서 보정 범위를 제한합니다.
+        return Math.max(-15.0, Math.min(10.0, adjustmentScore));
+    }
+
+    private boolean hasGenreAffinity(List<Integer> candidateGenreIds, List<Integer> interactionGenreIds) {
+        if (candidateGenreIds == null || candidateGenreIds.isEmpty() || interactionGenreIds == null || interactionGenreIds.isEmpty()) {
+            return false;
+        }
+
+        boolean exactMatch = candidateGenreIds.stream().anyMatch(interactionGenreIds::contains);
+        if (exactMatch) {
+            return true;
+        }
+
+        return interactionGenreIds.stream()
+                .anyMatch(interactionGenreId -> {
+                    List<Integer> similarGenres = SIMILAR_GENRES.getOrDefault(interactionGenreId, Collections.emptyList());
+                    return candidateGenreIds.stream().anyMatch(similarGenres::contains);
+                });
     }
  
     // 시간 허용 오차

@@ -19,6 +19,8 @@ export interface Content {
   platforms: string[];
   watchLinks?: WatchLink[];
   type: 'movie' | 'drama';
+  sourceType?: 'movie' | 'tv';
+  genreIds?: number[];
   rating: number;
   genre?: string[];
   releaseYear?: number;

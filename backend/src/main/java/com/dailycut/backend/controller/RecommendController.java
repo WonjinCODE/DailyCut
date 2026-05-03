@@ -2,9 +2,11 @@ package com.dailycut.backend.controller;
  
 import com.dailycut.backend.dto.ApiResponseDto;
 import com.dailycut.backend.dto.ContentResponseDto;
+import com.dailycut.backend.service.AuthenticatedUserResolver;
 import com.dailycut.backend.service.RecommendService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -21,6 +23,7 @@ import java.util.stream.Collectors;
 public class RecommendController {
  
     private final RecommendService recommendService;
+    private final AuthenticatedUserResolver authenticatedUserResolver;
  
     /**
      * 콘텐츠 추천 API
@@ -33,13 +36,15 @@ public class RecommendController {
     public ApiResponseDto<List<ContentResponseDto>> recommend(
             @RequestParam Integer time,
             @RequestParam String otts,
-            @RequestParam(required = false) String genre) {
+            @RequestParam(required = false) String genre,
+            @RequestHeader(value = "Authorization", required = false) String authorizationHeader) {
  
         // "35,28" → Set<Integer>{35, 28} 변환
         Set<Integer> genreIds = parseGenreIds(genre);
+        Long userId = authenticatedUserResolver.resolveUserId(authorizationHeader).orElse(null);
  
         List<ContentResponseDto> recommendations =
-                recommendService.getRecommendations(time, otts, genreIds);
+                recommendService.getRecommendations(time, otts, genreIds, userId);
  
         return ApiResponseDto.success(recommendations);
     }

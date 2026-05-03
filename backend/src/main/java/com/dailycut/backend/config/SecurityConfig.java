@@ -30,7 +30,8 @@ public class SecurityConfig {
                 .requestMatchers(
                     "/api/v1/health",
                     "/api/v1/auth/**",
-                    "/api/v1/contents/recommend"
+                    "/api/v1/contents/recommend",
+                    "/api/v1/contents/*/evaluate"
                 ).permitAll()
                 .anyRequest().authenticated()
             );

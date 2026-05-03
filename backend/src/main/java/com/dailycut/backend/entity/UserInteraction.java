@@ -5,15 +5,16 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Entity
 @Getter @Setter
 @NoArgsConstructor
-@EntityListeners(AuditingEntityListener.class)
 @Table(name = "user_interactions")
 public class UserInteraction {
 
@@ -34,8 +35,47 @@ public class UserInteraction {
     @Column(nullable = false)
     private InteractionType interactionType;
 
-    // 언제 눌렀는지
-    @CreatedDate
-    @Column(updatable = false)
+    @Column(name = "content_title", length = 200)
+    private String contentTitle;
+
+    @Column(name = "content_type", length = 20)
+    private String contentType;
+
+    @Column(name = "genre_ids", length = 200)
+    private String genreIds;
+
+    @Column(name = "poster_url", length = 300)
+    private String posterUrl;
+
+    @Column(name = "runtime_min")
+    private Integer runtime;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+
+    public List<Integer> getParsedGenreIds() {
+        if (genreIds == null || genreIds.isBlank()) {
+            return Collections.emptyList();
+        }
+
+        return Arrays.stream(genreIds.split(","))
+                .map(String::trim)
+                .filter(value -> !value.isBlank())
+                .map(Integer::parseInt)
+                .collect(Collectors.toList());
+    }
 }

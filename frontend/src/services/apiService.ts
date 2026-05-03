@@ -2,6 +2,8 @@ import type { WatchLink } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
+type EvaluationType = 'LIKE' | 'WATCHED' | 'DISLIKE';
+
 export interface RecommendationItem {
   id: number;
   type: 'movie' | 'tv';
@@ -21,6 +23,39 @@ export interface RecommendationResponse {
   data: RecommendationItem[];
 }
 
+export interface EvaluationRequestPayload {
+  evaluationType: EvaluationType;
+  title: string;
+  type: 'movie' | 'tv';
+  genreIds: number[];
+  posterUrl: string;
+  runtime: number;
+}
+
+function buildAuthHeaders(includeJsonContentType = false): HeadersInit {
+  const token = localStorage.getItem('accessToken');
+  const headers: Record<string, string> = {};
+
+  if (includeJsonContentType) {
+    headers['Content-Type'] = 'application/json';
+  }
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  return headers;
+}
+
+async function getErrorMessage(response: Response, fallbackMessage: string): Promise<string> {
+  try {
+    const result = await response.json();
+    return result?.error?.message || result?.message || fallbackMessage;
+  } catch {
+    return fallbackMessage;
+  }
+}
+
 export const getRecommendations = async (
   time: number,
   otts: string[],
@@ -33,11 +68,37 @@ export const getRecommendations = async (
     url += `&genre=${genre.join(',')}`;
   }
 
-  const response = await fetch(url);
+  const response = await fetch(url, {
+    headers: buildAuthHeaders(),
+  });
   if (!response.ok) {
-    throw new Error('네트워크 응답에 문제가 발생했습니다.');
+    throw new Error(await getErrorMessage(response, '추천 데이터를 불러오지 못했습니다.'));
   }
   return response.json();
+};
+
+export const evaluateContent = async (
+  contentId: string,
+  payload: EvaluationRequestPayload
+): Promise<string> => {
+  const token = localStorage.getItem('accessToken');
+  if (!token) {
+    throw new Error('로그인이 필요한 기능입니다.');
+  }
+
+  const response = await fetch(`${API_BASE_URL}/contents/${contentId}/evaluate`, {
+    method: 'POST',
+    headers: buildAuthHeaders(true),
+    body: JSON.stringify(payload),
+  });
+
+  const result = await response.json().catch(() => null);
+
+  if (!response.ok || !result?.success) {
+    throw new Error(result?.error?.message || '반응 저장에 실패했습니다.');
+  }
+
+  return typeof result.data === 'string' ? result.data : '반응이 저장되었습니다.';
 };
 
 // 마이페이지 응답 데이터 타입 정의
