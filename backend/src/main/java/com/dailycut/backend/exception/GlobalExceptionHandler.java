@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -14,6 +15,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponseDto<Void>> handleMissingParams(MissingServletRequestParameterException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponseDto.error(400, "필수 파라미터가 누락되었습니다: " + e.getParameterName()));
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ApiResponseDto<Void>> handleResponseStatusException(ResponseStatusException e) {
+        int status = e.getStatusCode().value();
+        return ResponseEntity.status(e.getStatusCode())
+                .body(ApiResponseDto.error(status, e.getReason()));
     }
 
     @ExceptionHandler(Exception.class)

@@ -9,15 +9,27 @@ const Header = () => {
 
   // 화면이 렌더링될 때 브라우저 금고(localStorage)를 확인하는 함수
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    const storedNickname = localStorage.getItem('nickname');
-    
-    if (token) {
-      setIsLoggedIn(true);
-      setNickname(storedNickname || '사용자');
-    } else {
-      setIsLoggedIn(false);
-    }
+    const syncAuthState = () => {
+      const token = localStorage.getItem('accessToken');
+      const storedNickname = localStorage.getItem('nickname');
+      
+      if (token) {
+        setIsLoggedIn(true);
+        setNickname(storedNickname || '사용자');
+      } else {
+        setIsLoggedIn(false);
+        setNickname('');
+      }
+    };
+
+    syncAuthState();
+    window.addEventListener('storage', syncAuthState);
+    window.addEventListener('focus', syncAuthState);
+
+    return () => {
+      window.removeEventListener('storage', syncAuthState);
+      window.removeEventListener('focus', syncAuthState);
+    };
   }, []);
 
   // 로그아웃 버튼을 눌렀을 때 실행될 함수
@@ -62,6 +74,11 @@ const Header = () => {
             콘텐츠 추천
           </button>
           <Link to="/calculator" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">시청 계산기</Link>
+          {isLoggedIn && (
+            <Link to="/mypage" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">
+              마이페이지
+            </Link>
+          )}
         </nav>
 
         {/* ⭐ 로그인 상태에 따라 다르게 보여주는 영역 */}
@@ -72,6 +89,12 @@ const Header = () => {
               <span className="text-sm font-medium text-white hidden md:inline-block">
                 <span className="text-accent-red font-bold">{nickname}</span>님 환영합니다
               </span>
+              <Link
+                to="/mypage"
+                className="md:hidden text-sm font-medium text-slate-300 hover:text-white transition-colors"
+              >
+                마이페이지
+              </Link>
               <button 
                 onClick={handleLogout}
                 className="px-4 py-2 text-sm font-bold text-white bg-slate-700 rounded-md hover:bg-slate-600 transition-colors"

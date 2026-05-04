@@ -58,6 +58,7 @@ export function buildOttSearchUrl(providerCode: string, title: string): string |
   const normalizedCode = normalizeOttProviderCode(providerCode);
   if (!normalizedCode) return null;
 
+  // 검색 URL은 추후 검증 필요: 각 OTT 서비스의 검색 URL 정책이 변경될 수 있습니다.
   switch (normalizedCode) {
     case 'netflix':
       return `https://www.netflix.com/search?${new URLSearchParams({ q: title }).toString()}`;

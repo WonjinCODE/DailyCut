@@ -31,7 +31,8 @@ public class SecurityConfig {
                     "/api/v1/health",
                     "/api/v1/auth/**",
                     "/api/v1/contents/recommend",
-                    "/api/v1/contents/*/evaluate"
+                    "/api/v1/contents/*/evaluate",
+                    "/api/v1/mypage/**"
                 ).permitAll()
                 .anyRequest().authenticated()
             );

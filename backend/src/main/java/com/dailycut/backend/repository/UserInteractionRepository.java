@@ -16,6 +16,8 @@ public interface UserInteractionRepository extends JpaRepository<UserInteraction
 
     List<UserInteraction> findAllByUserId(Long userId);
 
+    List<UserInteraction> findAllByUserIdOrderByCreatedAtDesc(Long userId);
+
     // 특정 유저가 '봤어요' 또는 '별로에요'를 누른 모든 영화 ID 목록 가져오기 (나중에 필터링할 때 사용!)
     List<UserInteraction> findAllByUserIdAndInteractionTypeIn(Long userId, List<InteractionType> types);
 }

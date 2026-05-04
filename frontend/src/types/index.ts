@@ -38,3 +38,42 @@ export interface DailyPlan {
   episodes: number[];
   totalTime: number;
 }
+
+export type InteractionType = 'LIKE' | 'WATCHED' | 'DISLIKE';
+
+export interface MyInteractionItem {
+  contentId: string;
+  title: string;
+  contentType: string;
+  posterUrl?: string;
+  runtime?: number;
+  genreIds?: number[];
+  interactionType: InteractionType;
+  createdAt?: string;
+}
+
+export interface MyInteractionsResponse {
+  like: MyInteractionItem[];
+  watched: MyInteractionItem[];
+  dislike: MyInteractionItem[];
+}
+
+export type OttCode =
+  | 'NETFLIX'
+  | 'TVING'
+  | 'WAVVE'
+  | 'DISNEY_PLUS'
+  | 'WATCHA'
+  | 'COUPANG_PLAY';
+
+export type GenreCode =
+  | 'ACTION'
+  | 'COMEDY'
+  | 'ROMANCE'
+  | 'THRILLER'
+  | 'SF'
+  | 'FANTASY'
+  | 'CRIME'
+  | 'DOCUMENTARY'
+  | 'ANIMATION'
+  | 'DRAMA';
