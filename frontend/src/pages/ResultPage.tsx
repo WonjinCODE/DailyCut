@@ -7,8 +7,9 @@ import EmptyState from '../components/common/EmptyState';
 import SectionHeader from '../components/common/SectionHeader';
 import { Content } from '../types';
 import { getRecommendations } from '../services/apiService';
-import { ArrowLeft, Filter, Tag, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Filter, Tag, AlertCircle, Home } from 'lucide-react';
 import { buildOttWatchLinks, normalizeOttProviderCodes } from '../utils/ottSearchLinks';
+import { useMediaQuery } from '../hooks/useMediaQuery';
 
 const GENRE_LABELS: Record<number, string> = {
   0: '상관없음',
@@ -28,6 +29,7 @@ const ResultPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [contents, setContents] = useState<Content[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const isMobile = useMediaQuery('(max-width: 767px)');
   
   const time = parseInt(searchParams.get('time') || '0');
   const ottsString = searchParams.get('otts') || '';
@@ -118,6 +120,19 @@ const ResultPage = () => {
     );
   }
 
+  if (isMobile) {
+    return (
+      <MobileResultView
+        contents={contents}
+        time={time}
+        ottCount={otts.length}
+        genreDisplayLabel={genreDisplayLabel}
+        onBack={() => navigate(-1)}
+        onHome={() => navigate('/')}
+      />
+    );
+  }
+
   return (
     <MainLayout>
       <section className="py-12 md:py-20 min-h-[80vh]">
@@ -181,5 +196,78 @@ const ResultPage = () => {
     </MainLayout>
   );
 };
+
+interface MobileResultViewProps {
+  contents: Content[];
+  time: number;
+  ottCount: number;
+  genreDisplayLabel: string;
+  onBack: () => void;
+  onHome: () => void;
+}
+
+const MobileResultView = ({
+  contents,
+  time,
+  ottCount,
+  genreDisplayLabel,
+  onBack,
+  onHome,
+}: MobileResultViewProps) => (
+  <MainLayout>
+    <section className="min-h-[80vh] px-4 py-8 overflow-x-hidden">
+      <div className="mb-6">
+        <button
+          type="button"
+          onClick={onBack}
+          className="mb-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-white/5 px-4 py-2 text-sm font-black text-slate-300"
+        >
+          <ArrowLeft size={16} />
+          조건 수정
+        </button>
+
+        <h1 className="text-2xl font-black leading-tight text-white">
+          추천 결과
+        </h1>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <span className="inline-flex min-h-9 items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 text-sm font-bold text-slate-300">
+            <Filter size={14} className="text-accent-red" />
+            {time}분
+          </span>
+          <span className="inline-flex min-h-9 items-center rounded-xl border border-white/10 bg-white/5 px-3 text-sm font-bold text-slate-300">
+            {ottCount === 0 ? '전체 OTT' : `${ottCount}개 OTT`}
+          </span>
+          <span className="inline-flex min-h-9 items-center gap-2 rounded-xl border border-accent-red/20 bg-accent-red/10 px-3 text-sm font-bold text-accent-red">
+            <Tag size={14} />
+            {genreDisplayLabel}
+          </span>
+        </div>
+      </div>
+
+      {contents.length > 0 ? (
+        <div className="grid grid-cols-1 gap-4">
+          {contents.map((content) => (
+            <ContentCard key={content.id} content={content} availableTime={time} />
+          ))}
+        </div>
+      ) : (
+        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6">
+          <EmptyState
+            title="조건에 맞는 영상을 찾지 못했어요"
+            description="시간을 늘리거나 OTT를 추가해보세요."
+          />
+          <button
+            type="button"
+            onClick={onHome}
+            className="mt-4 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-accent-red px-4 text-base font-black text-white"
+          >
+            <Home size={18} />
+            홈으로 돌아가기
+          </button>
+        </div>
+      )}
+    </section>
+  </MainLayout>
+);
 
 export default ResultPage;

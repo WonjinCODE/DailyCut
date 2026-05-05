@@ -6,6 +6,7 @@ import { evaluateContent } from '../../services/apiService';
 // ⭐ 평가용 아이콘(ThumbsUp, Eye, ThumbsDown) 추가
 import { PlayCircle, Clock, Star, ThumbsUp, Eye, ThumbsDown } from 'lucide-react';
 import { cn } from './Button';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 
 interface ContentCardProps {
   content: Content;
@@ -19,6 +20,7 @@ const ContentCard: React.FC<ContentCardProps> = ({ content, availableTime, class
   // ⭐ 로그인 상태를 확인하기 위한 state
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [pendingEvaluation, setPendingEvaluation] = useState<EvaluationType | null>(null);
+  const isMobile = useMediaQuery('(max-width: 767px)');
 
   useEffect(() => {
     // 브라우저 금고에 토큰이 있는지 확인
@@ -68,6 +70,19 @@ const ContentCard: React.FC<ContentCardProps> = ({ content, availableTime, class
       newWindow.opener = null;
     }
   };
+
+  if (isMobile) {
+    return (
+      <MobileContentCard
+        content={content}
+        isLoggedIn={isLoggedIn}
+        pendingEvaluation={pendingEvaluation}
+        onEvaluate={handleEvaluation}
+        onOttSearch={handleOttSearchClick}
+        className={className}
+      />
+    );
+  }
 
   // 여유 시간에 따른 뱃지 스타일 계산
   const renderTimeBadge = () => {
@@ -226,5 +241,114 @@ const ContentCard: React.FC<ContentCardProps> = ({ content, availableTime, class
     </div>
   );
 };
+
+interface MobileContentCardProps {
+  content: Content;
+  isLoggedIn: boolean;
+  pendingEvaluation: EvaluationType | null;
+  onEvaluate: (e: React.MouseEvent, evaluationType: EvaluationType) => void;
+  onOttSearch: (e: React.MouseEvent<HTMLButtonElement>, url: string) => void;
+  className?: string;
+}
+
+const MobileContentCard: React.FC<MobileContentCardProps> = ({
+  content,
+  isLoggedIn,
+  pendingEvaluation,
+  onEvaluate,
+  onOttSearch,
+  className,
+}) => (
+  <article className={cn(
+    'overflow-hidden rounded-2xl border border-white/10 bg-white/[0.05] shadow-xl',
+    className
+  )}>
+    <div className="grid grid-cols-[112px_minmax(0,1fr)] gap-4 p-4">
+      <div className="aspect-[2/3] overflow-hidden rounded-xl bg-black/30">
+        <img
+          src={content.posterUrl}
+          alt={`${content.title} 포스터`}
+          className="h-full w-full object-cover"
+          loading="lazy"
+        />
+      </div>
+
+      <div className="min-w-0">
+        <div className="mb-2 flex flex-wrap items-center gap-2 text-[11px] font-black uppercase text-slate-500">
+          <span>{content.type}</span>
+          <span className="h-1 w-1 rounded-full bg-slate-600" />
+          <span className="inline-flex items-center gap-1">
+            <Clock size={12} />
+            {content.runtime}분
+          </span>
+          <span className="inline-flex items-center gap-1 text-yellow-500">
+            <Star size={12} fill="currentColor" />
+            {content.rating}
+          </span>
+        </div>
+        <h4 className="text-lg font-black leading-tight text-white">
+          {content.title}
+        </h4>
+        {content.summary && (
+          <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-slate-400">
+            {content.summary}
+          </p>
+        )}
+      </div>
+    </div>
+
+    <div className="space-y-3 border-t border-white/10 p-4">
+      {content.watchLinks && content.watchLinks.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {content.watchLinks.map((watchLink) => (
+            <button
+              key={`${content.id}-${watchLink.providerCode}`}
+              type="button"
+              onClick={(event) => onOttSearch(event, watchLink.url)}
+              className="min-h-11 flex-1 rounded-xl border border-accent-red/20 bg-accent-red/10 px-3 py-2 text-sm font-black text-white"
+              title={`${watchLink.providerName}에서 ${content.title} 검색`}
+            >
+              {watchLink.providerName}에서 보기
+            </button>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-slate-500">선택한 OTT에서 검색 가능한 링크가 없습니다.</p>
+      )}
+
+      {isLoggedIn && (
+        <div className="grid grid-cols-3 gap-2 border-t border-white/10 pt-3">
+          <button
+            type="button"
+            onClick={(event) => onEvaluate(event, 'LIKE')}
+            disabled={pendingEvaluation !== null}
+            className="min-h-11 rounded-xl bg-white/5 px-2 py-2 text-xs font-bold text-slate-200 disabled:opacity-50"
+          >
+            <ThumbsUp size={16} className="mx-auto mb-1" />
+            볼거에요
+          </button>
+          <button
+            type="button"
+            onClick={(event) => onEvaluate(event, 'WATCHED')}
+            disabled={pendingEvaluation !== null}
+            className="min-h-11 rounded-xl bg-white/5 px-2 py-2 text-xs font-bold text-slate-200 disabled:opacity-50"
+          >
+            <Eye size={16} className="mx-auto mb-1" />
+            봤어요
+          </button>
+          <button
+            type="button"
+            onClick={(event) => onEvaluate(event, 'DISLIKE')}
+            disabled={pendingEvaluation !== null}
+            className="min-h-11 rounded-xl bg-white/5 px-2 py-2 text-xs font-bold text-slate-200 disabled:opacity-50"
+          >
+            <ThumbsDown size={16} className="mx-auto mb-1" />
+            별로에요
+          </button>
+        </div>
+      )}
+    </div>
+  </article>
+);
 
 export default ContentCard;

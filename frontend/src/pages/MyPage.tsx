@@ -28,8 +28,10 @@ import type {
   OttCode,
 } from '../types';
 import { buildOttWatchLinks } from '../utils/ottSearchLinks';
+import { useMediaQuery } from '../hooks/useMediaQuery';
 
 type InteractionTab = 'like' | 'watched' | 'dislike';
+type MobileMyPageSection = 'library' | 'otts' | 'genres';
 
 const INTERACTION_TABS: Array<{
   key: InteractionTab;
@@ -94,11 +96,13 @@ const MyPage = () => {
   const [interactions, setInteractions] = useState<MyInteractionsResponse>(emptyInteractions);
   const [selectedOtts, setSelectedOtts] = useState<OttCode[]>([]);
   const [selectedGenres, setSelectedGenres] = useState<GenreCode[]>([]);
+  const [mobileSection, setMobileSection] = useState<MobileMyPageSection>('library');
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingOtts, setIsSavingOtts] = useState(false);
   const [isSavingGenres, setIsSavingGenres] = useState(false);
   const [pendingContentId, setPendingContentId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const isMobile = useMediaQuery('(max-width: 767px)');
 
   const activeItems = interactions[activeTab] ?? [];
 
@@ -230,6 +234,30 @@ const MyPage = () => {
     );
   }
 
+  if (isMobile) {
+    return (
+      <MobileMyPageView
+        activeSection={mobileSection}
+        activeTab={activeTab}
+        interactions={interactions}
+        activeItems={activeItems}
+        selectedOtts={selectedOtts}
+        selectedGenres={selectedGenres}
+        pendingContentId={pendingContentId}
+        isSavingOtts={isSavingOtts}
+        isSavingGenres={isSavingGenres}
+        onSectionChange={setMobileSection}
+        onTabChange={setActiveTab}
+        onOttsChange={setSelectedOtts}
+        onGenresChange={setSelectedGenres}
+        onSaveOtts={handleSaveOtts}
+        onSaveGenres={handleSaveGenres}
+        onInteractionChange={handleInteractionChange}
+        onInteractionDelete={handleInteractionDelete}
+      />
+    );
+  }
+
   return (
     <MainLayout>
       <section className="py-10 md:py-16 min-h-[80vh]">
@@ -336,6 +364,292 @@ const MyPage = () => {
         </div>
       </section>
     </MainLayout>
+  );
+};
+
+interface MobileMyPageViewProps {
+  activeSection: MobileMyPageSection;
+  activeTab: InteractionTab;
+  interactions: MyInteractionsResponse;
+  activeItems: MyInteractionItem[];
+  selectedOtts: OttCode[];
+  selectedGenres: GenreCode[];
+  pendingContentId: string | null;
+  isSavingOtts: boolean;
+  isSavingGenres: boolean;
+  onSectionChange: (section: MobileMyPageSection) => void;
+  onTabChange: (tab: InteractionTab) => void;
+  onOttsChange: (otts: OttCode[]) => void;
+  onGenresChange: (genres: GenreCode[]) => void;
+  onSaveOtts: () => void;
+  onSaveGenres: () => void;
+  onInteractionChange: (contentId: string, nextType: InteractionType) => void;
+  onInteractionDelete: (contentId: string) => void;
+}
+
+const MobileMyPageView = ({
+  activeSection,
+  activeTab,
+  interactions,
+  activeItems,
+  selectedOtts,
+  selectedGenres,
+  pendingContentId,
+  isSavingOtts,
+  isSavingGenres,
+  onSectionChange,
+  onTabChange,
+  onOttsChange,
+  onGenresChange,
+  onSaveOtts,
+  onSaveGenres,
+  onInteractionChange,
+  onInteractionDelete,
+}: MobileMyPageViewProps) => {
+  const sectionTabs: Array<{ key: MobileMyPageSection; label: string }> = [
+    { key: 'library', label: '보관함' },
+    { key: 'otts', label: 'OTT 설정' },
+    { key: 'genres', label: '장르 설정' },
+  ];
+
+  return (
+    <MainLayout>
+      <section className="min-h-[80vh] px-4 py-8 overflow-x-hidden">
+        <div className="mb-6">
+          <p className="text-xs font-black uppercase tracking-widest text-accent-red mb-3">
+            My Page
+          </p>
+          <h1 className="text-2xl font-black text-white">마이페이지</h1>
+          <p className="mt-2 text-sm leading-relaxed text-slate-400">
+            내 추천 데이터를 관리해보세요.
+          </p>
+        </div>
+
+        <div className="mb-5 flex gap-2 overflow-x-auto pb-1">
+          {sectionTabs.map((section) => (
+            <button
+              key={section.key}
+              type="button"
+              onClick={() => onSectionChange(section.key)}
+              className={`min-h-11 shrink-0 rounded-xl border px-4 py-2 text-sm font-black ${
+                activeSection === section.key
+                  ? 'border-accent-red bg-accent-red text-white'
+                  : 'border-white/10 bg-white/5 text-slate-300'
+              }`}
+            >
+              {section.label}
+            </button>
+          ))}
+        </div>
+
+        {activeSection === 'library' && (
+          <div>
+            <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
+              {INTERACTION_TABS.map((tab) => (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => onTabChange(tab.key)}
+                  className={`min-h-10 shrink-0 rounded-xl border px-3 py-2 text-sm font-bold ${
+                    activeTab === tab.key
+                      ? 'border-white bg-white text-dark'
+                      : 'border-white/10 bg-white/5 text-slate-300'
+                  }`}
+                >
+                  {tab.label} {interactions[tab.key].length}
+                </button>
+              ))}
+            </div>
+
+            {activeItems.length > 0 ? (
+              <div className="grid gap-4">
+                {activeItems.map((item) => (
+                  <MobileInteractionCard
+                    key={item.contentId}
+                    item={item}
+                    selectedOtts={selectedOtts}
+                    isPending={pendingContentId === item.contentId}
+                    onChange={onInteractionChange}
+                    onDelete={onInteractionDelete}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6">
+                <EmptyState
+                  title={`${INTERACTION_TABS.find((tab) => tab.key === activeTab)?.label} 콘텐츠가 없습니다`}
+                  description="추천 카드에서 반응을 남기면 이곳에 표시됩니다."
+                />
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeSection === 'otts' && (
+          <MobileSettingsBlock
+            title="구독 OTT 설정"
+            description="보관함 검색 버튼에 사용할 OTT를 골라주세요."
+            isSaving={isSavingOtts}
+            onSave={onSaveOtts}
+          >
+            <div className="grid grid-cols-2 gap-2">
+              {OTT_OPTIONS.map((ott) => (
+                <ToggleButton
+                  key={ott.code}
+                  label={ott.label}
+                  active={selectedOtts.includes(ott.code)}
+                  onClick={() => onOttsChange(toggleValue(selectedOtts, ott.code))}
+                />
+              ))}
+            </div>
+          </MobileSettingsBlock>
+        )}
+
+        {activeSection === 'genres' && (
+          <MobileSettingsBlock
+            title="선호 장르 설정"
+            description="선택한 순서대로 선호 장르가 저장됩니다."
+            isSaving={isSavingGenres}
+            onSave={onSaveGenres}
+          >
+            <div className="flex flex-wrap gap-2">
+              {GENRE_OPTIONS.map((genre) => (
+                <ToggleButton
+                  key={genre.code}
+                  label={genre.label}
+                  active={selectedGenres.includes(genre.code)}
+                  onClick={() => onGenresChange(toggleValue(selectedGenres, genre.code))}
+                />
+              ))}
+            </div>
+          </MobileSettingsBlock>
+        )}
+      </section>
+    </MainLayout>
+  );
+};
+
+interface MobileSettingsBlockProps {
+  title: string;
+  description: string;
+  isSaving: boolean;
+  onSave: () => void;
+  children: ReactNode;
+}
+
+const MobileSettingsBlock = ({
+  title,
+  description,
+  isSaving,
+  onSave,
+  children,
+}: MobileSettingsBlockProps) => (
+  <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+    <h2 className="text-xl font-black text-white">{title}</h2>
+    <p className="mt-2 text-sm leading-relaxed text-slate-500">{description}</p>
+    <div className="mt-5">{children}</div>
+    <button
+      type="button"
+      onClick={onSave}
+      disabled={isSaving}
+      className="mt-6 min-h-12 w-full rounded-xl bg-accent-red px-4 text-base font-black text-white disabled:opacity-60"
+    >
+      {isSaving ? '저장 중...' : '저장'}
+    </button>
+  </section>
+);
+
+interface MobileInteractionCardProps {
+  item: MyInteractionItem;
+  selectedOtts: OttCode[];
+  isPending: boolean;
+  onChange: (contentId: string, nextType: InteractionType) => void;
+  onDelete: (contentId: string) => void;
+}
+
+const MobileInteractionCard = ({
+  item,
+  selectedOtts,
+  isPending,
+  onChange,
+  onDelete,
+}: MobileInteractionCardProps) => {
+  const watchLinks = buildOttWatchLinks(selectedOtts, item.title || '');
+
+  return (
+    <article className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04]">
+      <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-3 p-4">
+        <div className="aspect-[2/3] overflow-hidden rounded-xl bg-black/30 border border-white/10">
+          {item.posterUrl ? (
+            <img
+              src={item.posterUrl}
+              alt={`${item.title} 포스터`}
+              className="h-full w-full object-cover"
+              loading="lazy"
+            />
+          ) : (
+            <div className="h-full w-full flex items-center justify-center text-slate-600">
+              <Film size={26} />
+            </div>
+          )}
+        </div>
+
+        <div className="min-w-0">
+          <p className="text-[11px] font-black uppercase text-slate-500">
+            {item.contentType || 'content'}
+            {item.runtime ? ` · ${item.runtime}분` : ''}
+          </p>
+          <h3 className="mt-2 text-base font-black leading-tight text-white">
+            {item.title || '제목 없음'}
+          </h3>
+          <p className="mt-2 text-xs font-bold text-accent-red">
+            {INTERACTION_LABELS[item.interactionType]}
+          </p>
+        </div>
+      </div>
+
+      <div className="space-y-3 border-t border-white/10 p-4">
+        {selectedOtts.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {watchLinks.map((watchLink) => (
+              <button
+                key={watchLink.providerCode}
+                type="button"
+                onClick={() => openExternalUrl(watchLink.url)}
+                className="min-h-11 flex-1 rounded-xl border border-accent-red/20 bg-accent-red/10 px-3 text-sm font-black text-white"
+              >
+                {watchLink.providerName}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-slate-500">구독 OTT를 먼저 설정해주세요.</p>
+        )}
+
+        <select
+          value={item.interactionType}
+          disabled={isPending}
+          onChange={(event) => onChange(item.contentId, event.target.value as InteractionType)}
+          className="min-h-11 w-full rounded-xl border border-white/10 bg-black/30 px-3 text-sm font-black text-white focus:border-accent-red focus:outline-none disabled:opacity-50"
+          aria-label={`${item.title} 반응 변경`}
+        >
+          {INTERACTION_TABS.map((tab) => (
+            <option key={tab.type} value={tab.type} className="bg-dark text-white">
+              {tab.label}
+            </option>
+          ))}
+        </select>
+
+        <button
+          type="button"
+          disabled={isPending}
+          onClick={() => onDelete(item.contentId)}
+          className="min-h-11 w-full rounded-xl border border-red-500/30 bg-red-500/10 px-4 text-sm font-black text-red-200 disabled:opacity-50"
+        >
+          반응 기록 삭제
+        </button>
+      </div>
+    </article>
   );
 };
 
