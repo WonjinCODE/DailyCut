@@ -55,6 +55,7 @@ public class MyPageService {
     private final UserInteractionRepository userInteractionRepository;
     private final UserOttRepository userOttRepository;
     private final UserPreferenceRepository userPreferenceRepository;
+    private final UserInteractionService userInteractionService;
 
     @Transactional(readOnly = true)
     public MyInteractionsResponseDto getInteractions(Long userId) {
@@ -95,10 +96,10 @@ public class MyPageService {
 
     @Transactional
     public void deleteInteraction(Long userId, String contentId) {
-        UserInteraction interaction = userInteractionRepository.findByUserIdAndContentId(userId, contentId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "해당 반응 기록을 찾을 수 없습니다."));
-
-        userInteractionRepository.delete(interaction);
+        boolean deleted = userInteractionService.deleteInteraction(userId, contentId);
+        if (!deleted) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "해당 반응 기록을 찾을 수 없습니다.");
+        }
     }
 
     @Transactional(readOnly = true)

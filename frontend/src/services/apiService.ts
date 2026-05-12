@@ -1,8 +1,6 @@
-import type { WatchLink } from '../types';
+import type { InteractionType, WatchLink } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
-
-type EvaluationType = 'LIKE' | 'WATCHED' | 'DISLIKE';
 
 export interface RecommendationItem {
   id: number;
@@ -16,6 +14,7 @@ export interface RecommendationItem {
   runtime?: number;
   tmdbRating?: number | null;
   watchLinks?: WatchLink[];
+  currentInteractionType?: InteractionType | null;
 }
 
 export interface RecommendationResponse {
@@ -24,7 +23,7 @@ export interface RecommendationResponse {
 }
 
 export interface EvaluationRequestPayload {
-  evaluationType: EvaluationType;
+  evaluationType: InteractionType;
   title: string;
   type: 'movie' | 'tv';
   genreIds: number[];
@@ -99,6 +98,26 @@ export const evaluateContent = async (
   }
 
   return typeof result.data === 'string' ? result.data : '반응이 저장되었습니다.';
+};
+
+export const deleteEvaluation = async (contentId: string): Promise<string> => {
+  const token = localStorage.getItem('accessToken');
+  if (!token) {
+    throw new Error('로그인이 필요한 기능입니다.');
+  }
+
+  const response = await fetch(`${API_BASE_URL}/contents/${contentId}/evaluate`, {
+    method: 'DELETE',
+    headers: buildAuthHeaders(),
+  });
+
+  const result = await response.json().catch(() => null);
+
+  if (!response.ok || !result?.success) {
+    throw new Error(result?.error?.message || '반응 취소에 실패했습니다.');
+  }
+
+  return typeof result.data === 'string' ? result.data : '반응이 취소되었습니다.';
 };
 
 // 마이페이지 응답 데이터 타입 정의

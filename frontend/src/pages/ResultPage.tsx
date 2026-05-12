@@ -72,7 +72,8 @@ const ResultPage = () => {
               sourceType: item.type,
               genreIds: item.genreIds ?? item.genre_ids ?? [],
               rating: Number((item.tmdbRating ?? fallbackRating).toFixed(1)),
-              summary: item.overview
+              summary: item.overview,
+              currentInteractionType: item.currentInteractionType ?? null,
             };
           });
           setContents(mappedContents);

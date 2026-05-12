@@ -77,7 +77,6 @@ const Header = () => {
           >
             콘텐츠 추천
           </button>
-          <Link to="/calculator" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">시청 계산기</Link>
           {isLoggedIn && (
             <Link to="/mypage" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">
               마이페이지
@@ -141,13 +140,6 @@ const Header = () => {
             >
               콘텐츠 추천
             </button>
-            <Link
-              to="/calculator"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="min-h-11 rounded-xl px-4 py-3 text-base font-bold text-slate-200 hover:bg-white/10"
-            >
-              시청 계산기
-            </Link>
             {isLoggedIn && (
               <Link
                 to="/mypage"

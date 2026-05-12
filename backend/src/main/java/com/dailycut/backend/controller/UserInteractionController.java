@@ -38,4 +38,24 @@ public class UserInteractionController {
                     .body(ApiResponseDto.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), "서버 오류가 발생했습니다."));
         }
     }
+
+    @DeleteMapping("/{contentId}/evaluate")
+    public ResponseEntity<ApiResponseDto<String>> cancelEvaluation(
+            @PathVariable String contentId,
+            @RequestHeader(value = "Authorization", required = false) String authorizationHeader) {
+
+        try {
+            Long userId = authenticatedUserResolver.requireUserId(authorizationHeader);
+
+            interactionService.deleteInteraction(userId, contentId);
+
+            return ResponseEntity.ok(ApiResponseDto.success("반응이 취소되었습니다."));
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode())
+                    .body(ApiResponseDto.error(e.getStatusCode().value(), e.getReason()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponseDto.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), "서버 오류가 발생했습니다."));
+        }
+    }
 }

@@ -25,6 +25,7 @@ export interface Content {
   genre?: string[];
   releaseYear?: number;
   summary?: string;
+  currentInteractionType?: InteractionType | null;
 }
 
 export interface RecommendationParams {

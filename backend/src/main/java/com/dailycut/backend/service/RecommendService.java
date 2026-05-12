@@ -54,6 +54,12 @@ public class RecommendService {
                 .filter(interaction -> interaction.getInteractionType() == InteractionType.WATCHED)
                 .map(UserInteraction::getContentId)
                 .collect(Collectors.toSet());
+        Map<String, InteractionType> interactionTypeByContentId = interactions.stream()
+                .collect(Collectors.toMap(
+                        UserInteraction::getContentId,
+                        UserInteraction::getInteractionType,
+                        (existing, replacement) -> replacement
+                ));
         List<List<Integer>> recentGenreHistory = Collections.emptyList();
 
         return Stream.concat(
@@ -98,6 +104,7 @@ public class RecommendService {
                     double scoreU = scoreCalculator.calculateU(String.valueOf(result.getId()), result.getGenreIds(), interactions);
 
                     double finalScore = scoreT + scoreG + scoreQ + scoreP + scoreD + scoreE + scoreU;
+                    InteractionType currentInteractionType = interactionTypeByContentId.get(String.valueOf(result.getId()));
 
                     return ContentResponseDto.builder()
                             .id(result.getId())
@@ -118,6 +125,7 @@ public class RecommendService {
                             .scoreE(scoreE)
                             .scoreU(scoreU)
                             .finalScore(finalScore)
+                            .currentInteractionType(currentInteractionType == null ? null : currentInteractionType.name())
                             .build();
                 })
                 .filter(Objects::nonNull)

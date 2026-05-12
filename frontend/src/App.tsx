@@ -1,7 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import ResultPage from './pages/ResultPage';
-import BingeCalcPage from './pages/BingeCalcPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import MyPage from './pages/MyPage';
@@ -21,7 +20,6 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/recommend" element={<HomePage />} />
         <Route path="/result" element={<ResultPage />} />
-        <Route path="/calculator" element={<BingeCalcPage />} />
 
         {/* 로그인 / 회원가입 */}
         <Route path="/login" element={<LoginPage />} />

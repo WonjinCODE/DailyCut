@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Content } from '../../types';
+import type { Content, InteractionType } from '../../types';
 import { OTT_PLATFORMS } from '../home/OttSelector';
 import { normalizeOttProviderCode } from '../../utils/ottSearchLinks';
-import { evaluateContent } from '../../services/apiService';
+import { deleteEvaluation, evaluateContent } from '../../services/apiService';
 // ⭐ 평가용 아이콘(ThumbsUp, Eye, ThumbsDown) 추가
 import { PlayCircle, Clock, Star, ThumbsUp, Eye, ThumbsDown } from 'lucide-react';
 import { cn } from './Button';
@@ -14,12 +14,13 @@ interface ContentCardProps {
   className?: string;
 }
 
-type EvaluationType = 'LIKE' | 'WATCHED' | 'DISLIKE';
-
 const ContentCard: React.FC<ContentCardProps> = ({ content, availableTime, className }) => {
   // ⭐ 로그인 상태를 확인하기 위한 state
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [pendingEvaluation, setPendingEvaluation] = useState<EvaluationType | null>(null);
+  const [pendingEvaluation, setPendingEvaluation] = useState<InteractionType | null>(null);
+  const [selectedEvaluation, setSelectedEvaluation] = useState<InteractionType | null>(
+    content.currentInteractionType ?? null
+  );
   const isMobile = useMediaQuery('(max-width: 767px)');
 
   useEffect(() => {
@@ -30,8 +31,12 @@ const ContentCard: React.FC<ContentCardProps> = ({ content, availableTime, class
     }
   }, []);
 
+  useEffect(() => {
+    setSelectedEvaluation(content.currentInteractionType ?? null);
+  }, [content.id, content.currentInteractionType]);
+
   // ⭐ 평가 버튼을 클릭했을 때 실행되는 임시 함수
-  const handleEvaluation = async (e: React.MouseEvent, evaluationType: EvaluationType) => {
+  const handleEvaluation = async (e: React.MouseEvent, evaluationType: InteractionType) => {
     e.preventDefault(); // 카드 전체 클릭 방지
     e.stopPropagation(); 
 
@@ -44,21 +49,38 @@ const ContentCard: React.FC<ContentCardProps> = ({ content, availableTime, class
 
     try {
       setPendingEvaluation(evaluationType);
-      const message = await evaluateContent(content.id, {
-        evaluationType,
-        title: content.title,
-        type: content.sourceType ?? (content.type === 'movie' ? 'movie' : 'tv'),
-        genreIds: content.genreIds ?? [],
-        posterUrl: content.posterUrl,
-        runtime: content.runtime,
-      });
+      const isSameEvaluation = selectedEvaluation === evaluationType;
+      const message = isSameEvaluation
+        ? await deleteEvaluation(content.id)
+        : await evaluateContent(content.id, {
+            evaluationType,
+            title: content.title,
+            type: content.sourceType ?? (content.type === 'movie' ? 'movie' : 'tv'),
+            genreIds: content.genreIds ?? [],
+            posterUrl: content.posterUrl,
+            runtime: content.runtime,
+          });
+
+      setSelectedEvaluation(isSameEvaluation ? null : evaluationType);
       alert(message);
     } catch (error) {
-      const message = error instanceof Error ? error.message : '반응 저장 중 오류가 발생했습니다.';
+      const message = error instanceof Error ? error.message : '반응 처리 중 오류가 발생했습니다.';
       alert(message);
     } finally {
       setPendingEvaluation(null);
     }
+  };
+
+  const getEvaluationTextClass = (evaluationType: InteractionType) => {
+    return selectedEvaluation === evaluationType
+      ? 'text-accent-red font-bold'
+      : 'font-medium';
+  };
+
+  const getEvaluationIconClass = (evaluationType: InteractionType) => {
+    return selectedEvaluation === evaluationType
+      ? 'text-accent-red'
+      : 'text-slate-400';
   };
 
   const handleOttSearchClick = (e: React.MouseEvent<HTMLButtonElement>, url: string) => {
@@ -77,6 +99,9 @@ const ContentCard: React.FC<ContentCardProps> = ({ content, availableTime, class
         content={content}
         isLoggedIn={isLoggedIn}
         pendingEvaluation={pendingEvaluation}
+        selectedEvaluation={selectedEvaluation}
+        getEvaluationTextClass={getEvaluationTextClass}
+        getEvaluationIconClass={getEvaluationIconClass}
         onEvaluate={handleEvaluation}
         onOttSearch={handleOttSearchClick}
         className={className}
@@ -210,8 +235,8 @@ const ContentCard: React.FC<ContentCardProps> = ({ content, availableTime, class
               className="flex flex-col items-center gap-1 text-slate-400 hover:text-accent-red transition-colors group/btn disabled:opacity-50 disabled:cursor-not-allowed"
               title="찜하기"
             >
-              <ThumbsUp size={16} className="group-hover/btn:scale-110 transition-transform" />
-              <span className="text-[10px] font-medium">볼거에요</span>
+              <ThumbsUp size={16} className={cn('group-hover/btn:scale-110 transition-transform', getEvaluationIconClass('LIKE'))} />
+              <span className={cn('text-[10px]', getEvaluationTextClass('LIKE'))}>볼거에요</span>
             </button>
             
             <button 
@@ -221,8 +246,8 @@ const ContentCard: React.FC<ContentCardProps> = ({ content, availableTime, class
               className="flex flex-col items-center gap-1 text-slate-400 hover:text-blue-400 transition-colors group/btn disabled:opacity-50 disabled:cursor-not-allowed"
               title="이미 본 콘텐츠"
             >
-              <Eye size={16} className="group-hover/btn:scale-110 transition-transform" />
-              <span className="text-[10px] font-medium">봤어요</span>
+              <Eye size={16} className={cn('group-hover/btn:scale-110 transition-transform', getEvaluationIconClass('WATCHED'))} />
+              <span className={cn('text-[10px]', getEvaluationTextClass('WATCHED'))}>봤어요</span>
             </button>
 
             <button 
@@ -232,8 +257,8 @@ const ContentCard: React.FC<ContentCardProps> = ({ content, availableTime, class
               className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-300 transition-colors group/btn disabled:opacity-50 disabled:cursor-not-allowed"
               title="추천 안 함"
             >
-              <ThumbsDown size={16} className="group-hover/btn:scale-110 transition-transform" />
-              <span className="text-[10px] font-medium">별로에요</span>
+              <ThumbsDown size={16} className={cn('group-hover/btn:scale-110 transition-transform', getEvaluationIconClass('DISLIKE'))} />
+              <span className={cn('text-[10px]', getEvaluationTextClass('DISLIKE'))}>별로에요</span>
             </button>
           </div>
         )}
@@ -245,8 +270,11 @@ const ContentCard: React.FC<ContentCardProps> = ({ content, availableTime, class
 interface MobileContentCardProps {
   content: Content;
   isLoggedIn: boolean;
-  pendingEvaluation: EvaluationType | null;
-  onEvaluate: (e: React.MouseEvent, evaluationType: EvaluationType) => void;
+  pendingEvaluation: InteractionType | null;
+  selectedEvaluation: InteractionType | null;
+  getEvaluationTextClass: (evaluationType: InteractionType) => string;
+  getEvaluationIconClass: (evaluationType: InteractionType) => string;
+  onEvaluate: (e: React.MouseEvent, evaluationType: InteractionType) => void;
   onOttSearch: (e: React.MouseEvent<HTMLButtonElement>, url: string) => void;
   className?: string;
 }
@@ -255,6 +283,9 @@ const MobileContentCard: React.FC<MobileContentCardProps> = ({
   content,
   isLoggedIn,
   pendingEvaluation,
+  selectedEvaluation,
+  getEvaluationTextClass,
+  getEvaluationIconClass,
   onEvaluate,
   onOttSearch,
   className,
@@ -322,28 +353,31 @@ const MobileContentCard: React.FC<MobileContentCardProps> = ({
             type="button"
             onClick={(event) => onEvaluate(event, 'LIKE')}
             disabled={pendingEvaluation !== null}
-            className="min-h-11 rounded-xl bg-white/5 px-2 py-2 text-xs font-bold text-slate-200 disabled:opacity-50"
+            className="min-h-11 rounded-xl bg-white/5 px-2 py-2 text-xs text-slate-200 disabled:opacity-50"
+            aria-pressed={selectedEvaluation === 'LIKE'}
           >
-            <ThumbsUp size={16} className="mx-auto mb-1" />
-            볼거에요
+            <ThumbsUp size={16} className={cn('mx-auto mb-1', getEvaluationIconClass('LIKE'))} />
+            <span className={getEvaluationTextClass('LIKE')}>볼거에요</span>
           </button>
           <button
             type="button"
             onClick={(event) => onEvaluate(event, 'WATCHED')}
             disabled={pendingEvaluation !== null}
-            className="min-h-11 rounded-xl bg-white/5 px-2 py-2 text-xs font-bold text-slate-200 disabled:opacity-50"
+            className="min-h-11 rounded-xl bg-white/5 px-2 py-2 text-xs text-slate-200 disabled:opacity-50"
+            aria-pressed={selectedEvaluation === 'WATCHED'}
           >
-            <Eye size={16} className="mx-auto mb-1" />
-            봤어요
+            <Eye size={16} className={cn('mx-auto mb-1', getEvaluationIconClass('WATCHED'))} />
+            <span className={getEvaluationTextClass('WATCHED')}>봤어요</span>
           </button>
           <button
             type="button"
             onClick={(event) => onEvaluate(event, 'DISLIKE')}
             disabled={pendingEvaluation !== null}
-            className="min-h-11 rounded-xl bg-white/5 px-2 py-2 text-xs font-bold text-slate-200 disabled:opacity-50"
+            className="min-h-11 rounded-xl bg-white/5 px-2 py-2 text-xs text-slate-200 disabled:opacity-50"
+            aria-pressed={selectedEvaluation === 'DISLIKE'}
           >
-            <ThumbsDown size={16} className="mx-auto mb-1" />
-            별로에요
+            <ThumbsDown size={16} className={cn('mx-auto mb-1', getEvaluationIconClass('DISLIKE'))} />
+            <span className={getEvaluationTextClass('DISLIKE')}>별로에요</span>
           </button>
         </div>
       )}

@@ -42,6 +42,17 @@ public class UserInteractionService {
         }
     }
 
+    @Transactional
+    public boolean deleteInteraction(Long userId, String contentId) {
+        Optional<UserInteraction> existing = interactionRepository.findByUserIdAndContentId(userId, contentId);
+        if (existing.isEmpty()) {
+            return false;
+        }
+
+        interactionRepository.delete(existing.get());
+        return true;
+    }
+
     private void applyMetadata(UserInteraction interaction, EvaluationRequest request) {
         if (request.getTitle() != null) {
             interaction.setContentTitle(request.getTitle());
