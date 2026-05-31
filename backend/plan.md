@@ -9,7 +9,7 @@
 - **폴더 스캐폴딩:** `config`, `controller`, `service`, `dto`, `exception`, `utils` 패키지 생성.
 
 ### 2단계: 환경 변수(application.yml) 및 보안 설정
-- **환경 변수 세팅:** `application.yml`에 `server.port: 8080` 및 `tmdb.api-key: ${TMDB_API_KEY}` 작성.
+- **환경 변수 세팅:** `application.yml`에 `server.port: 8081` 및 `tmdb.api-key: ${TMDB_API_KEY}` 작성.
 - **보안 적용:** `.gitignore`에 환경변수 파일 및 IDE 설정 파일 명시.
 
 ### 3단계: 전역 미들웨어(CORS) 및 Health Check API 구축
