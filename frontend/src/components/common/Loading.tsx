@@ -1,5 +1,5 @@
 import React from 'react';
-import { Loader2, Timer } from 'lucide-react';
+import { Timer } from 'lucide-react';
 
 interface LoadingProps {
   message?: string;

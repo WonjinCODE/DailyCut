@@ -1,8 +1,11 @@
 package com.dailycut.backend.service;
 
+import com.dailycut.backend.domain.enums.InteractionType;
 import com.dailycut.backend.dto.ContentResponseDto;
 import com.dailycut.backend.dto.TmdbDetailDto;
 import com.dailycut.backend.dto.TmdbResponseDto;
+import com.dailycut.backend.entity.UserInteraction;
+import com.dailycut.backend.repository.UserInteractionRepository;
 import com.dailycut.backend.utils.OttProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,6 +24,7 @@ public class RecommendService {
 
     private final RestTemplate restTemplate;
     private final ScoreCalculator scoreCalculator;
+    private final UserInteractionRepository userInteractionRepository;
 
     @Value("${tmdb.api-url}")
     private String apiUrl;
@@ -30,7 +34,8 @@ public class RecommendService {
     public List<ContentResponseDto> getRecommendations(
             Integer time,
             String otts,
-            Set<Integer> selectedGenreIds) {
+            Set<Integer> selectedGenreIds,
+            Long userId) {
 
         String providerIds = OttProvider.parseOtts(otts);
 
@@ -42,6 +47,19 @@ public class RecommendService {
         List<TmdbResponseDto.Result> tvResults = Optional.ofNullable(tvResponse)
                 .map(TmdbResponseDto::getResults).orElse(Collections.emptyList());
 
+        List<UserInteraction> interactions = (userId != null)
+                ? userInteractionRepository.findAllByUserId(userId)
+                : Collections.emptyList();
+        Set<String> watchedContentIds = interactions.stream()
+                .filter(interaction -> interaction.getInteractionType() == InteractionType.WATCHED)
+                .map(UserInteraction::getContentId)
+                .collect(Collectors.toSet());
+        Map<String, InteractionType> interactionTypeByContentId = interactions.stream()
+                .collect(Collectors.toMap(
+                        UserInteraction::getContentId,
+                        UserInteraction::getInteractionType,
+                        (existing, replacement) -> replacement
+                ));
         List<List<Integer>> recentGenreHistory = Collections.emptyList();
 
         return Stream.concat(
@@ -51,6 +69,10 @@ public class RecommendService {
                 .filter(obj -> {
                     TmdbResponseDto.Result r = (TmdbResponseDto.Result) obj[0];
                     return r != null && r.getPosterPath() != null;
+                })
+                .filter(obj -> {
+                    TmdbResponseDto.Result r = (TmdbResponseDto.Result) obj[0];
+                    return !watchedContentIds.contains(String.valueOf(r.getId()));
                 })
                 .parallel()
                 .map(obj -> {
@@ -79,9 +101,10 @@ public class RecommendService {
                     double scoreP = scoreCalculator.calculateP(popularity);
                     double scoreD = scoreCalculator.calculateD(result.getGenreIds(), recentGenreHistory);
                     double scoreE = scoreCalculator.calculateE(scoreT, scoreG);
-                    double scoreU = scoreCalculator.calculateU(0.0);
+                    double scoreU = scoreCalculator.calculateU(String.valueOf(result.getId()), result.getGenreIds(), interactions);
 
                     double finalScore = scoreT + scoreG + scoreQ + scoreP + scoreD + scoreE + scoreU;
+                    InteractionType currentInteractionType = interactionTypeByContentId.get(String.valueOf(result.getId()));
 
                     return ContentResponseDto.builder()
                             .id(result.getId())
@@ -102,6 +125,7 @@ public class RecommendService {
                             .scoreE(scoreE)
                             .scoreU(scoreU)
                             .finalScore(finalScore)
+                            .currentInteractionType(currentInteractionType == null ? null : currentInteractionType.name())
                             .build();
                 })
                 .filter(Objects::nonNull)

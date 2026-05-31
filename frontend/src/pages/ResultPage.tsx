@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
 import ContentCard from '../components/common/ContentCard';
@@ -7,7 +7,9 @@ import EmptyState from '../components/common/EmptyState';
 import SectionHeader from '../components/common/SectionHeader';
 import { Content } from '../types';
 import { getRecommendations } from '../services/apiService';
-import { ArrowLeft, Filter, Tag, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Filter, Tag, AlertCircle, Home } from 'lucide-react';
+import { buildOttWatchLinks, normalizeOttProviderCodes } from '../utils/ottSearchLinks';
+import { useMediaQuery } from '../hooks/useMediaQuery';
 
 const GENRE_LABELS: Record<number, string> = {
   0: '상관없음',
@@ -27,14 +29,19 @@ const ResultPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [contents, setContents] = useState<Content[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const isMobile = useMediaQuery('(max-width: 767px)');
   
   const time = parseInt(searchParams.get('time') || '0');
   const ottsString = searchParams.get('otts') || '';
-  const otts = ottsString ? ottsString.split(',') : [];
+  const otts = useMemo(
+    () => normalizeOttProviderCodes(ottsString ? ottsString.split(',') : []),
+    [ottsString]
+  );
   const genreParam = searchParams.get('genre');
   const genres = useMemo(() => {
     if (!genreParam) return [0];
     return genreParam.split(',').map(id => parseInt(id));
+
   }, [genreParam]);
 
   useEffect(() => {
@@ -45,18 +52,30 @@ const ResultPage = () => {
         const response = await getRecommendations(time, otts, genres.includes(0) ? undefined : genres);
         if (response.success) {
           // 백엔드 데이터를 프론트엔드 Content 인터페이스로 변환
-          const mappedContents: Content[] = response.data.map(item => ({
-            id: String(item.id),
-            title: item.title,
-            posterUrl: item.posterUrl,
-            // 백엔드에서 runtime 정보가 없으므로 요청한 시간(time)을 기준으로 대략 할당
-            runtime: item.type === 'movie' ? Math.min(time, 120) : 30, 
-            platforms: otts.length > 0 ? otts : ['netflix'], // 선택한 OTT가 있으면 표시
-            type: item.type === 'movie' ? 'movie' : 'drama',
-            // popularity를 0-10 사이의 rating으로 대략 변환 (임시)
-            rating: Math.min(9.9, Math.max(1.0, (item.popularity / 1000) * 10)).toFixed(1) as any,
-            summary: item.overview
-          }));
+          const mappedContents: Content[] = response.data.map((item) => {
+            const fallbackRating = Math.min(9.9, Math.max(1.0, ((item.popularity ?? 0) / 1000) * 10));
+            const resolvedPlatforms = item.watchLinks?.length
+              ? normalizeOttProviderCodes(item.watchLinks.map((watchLink) => watchLink.providerCode))
+              : otts;
+            const watchLinks = item.watchLinks?.length
+              ? item.watchLinks
+              : buildOttWatchLinks(resolvedPlatforms, item.title);
+
+            return {
+              id: String(item.id),
+              title: item.title,
+              posterUrl: item.posterUrl,
+              runtime: item.runtime && item.runtime > 0 ? item.runtime : (item.type === 'movie' ? Math.min(time, 120) : 30),
+              platforms: resolvedPlatforms,
+              watchLinks,
+              type: item.type === 'movie' ? 'movie' : 'drama',
+              sourceType: item.type,
+              genreIds: item.genreIds ?? item.genre_ids ?? [],
+              rating: Number((item.tmdbRating ?? fallbackRating).toFixed(1)),
+              summary: item.overview,
+              currentInteractionType: item.currentInteractionType ?? null,
+            };
+          });
           setContents(mappedContents);
         } else {
           setError('추천 데이터를 불러오는데 실패했습니다.');
@@ -73,7 +92,7 @@ const ResultPage = () => {
       fetchContents();
     }
     window.scrollTo(0, 0);
-  }, [time, ottsString, genres]);
+  }, [time, otts, genres]);
 
   const genreDisplayLabel = useMemo(() => {
     if (genres.includes(0)) return '전체 장르';
@@ -99,6 +118,19 @@ const ResultPage = () => {
           </button>
         </div>
       </MainLayout>
+    );
+  }
+
+  if (isMobile) {
+    return (
+      <MobileResultView
+        contents={contents}
+        time={time}
+        ottCount={otts.length}
+        genreDisplayLabel={genreDisplayLabel}
+        onBack={() => navigate(-1)}
+        onHome={() => navigate('/')}
+      />
     );
   }
 
@@ -165,5 +197,78 @@ const ResultPage = () => {
     </MainLayout>
   );
 };
+
+interface MobileResultViewProps {
+  contents: Content[];
+  time: number;
+  ottCount: number;
+  genreDisplayLabel: string;
+  onBack: () => void;
+  onHome: () => void;
+}
+
+const MobileResultView = ({
+  contents,
+  time,
+  ottCount,
+  genreDisplayLabel,
+  onBack,
+  onHome,
+}: MobileResultViewProps) => (
+  <MainLayout>
+    <section className="min-h-[80vh] px-4 py-8 overflow-x-hidden">
+      <div className="mb-6">
+        <button
+          type="button"
+          onClick={onBack}
+          className="mb-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-white/5 px-4 py-2 text-sm font-black text-slate-300"
+        >
+          <ArrowLeft size={16} />
+          조건 수정
+        </button>
+
+        <h1 className="text-2xl font-black leading-tight text-white">
+          추천 결과
+        </h1>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <span className="inline-flex min-h-9 items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 text-sm font-bold text-slate-300">
+            <Filter size={14} className="text-accent-red" />
+            {time}분
+          </span>
+          <span className="inline-flex min-h-9 items-center rounded-xl border border-white/10 bg-white/5 px-3 text-sm font-bold text-slate-300">
+            {ottCount === 0 ? '전체 OTT' : `${ottCount}개 OTT`}
+          </span>
+          <span className="inline-flex min-h-9 items-center gap-2 rounded-xl border border-accent-red/20 bg-accent-red/10 px-3 text-sm font-bold text-accent-red">
+            <Tag size={14} />
+            {genreDisplayLabel}
+          </span>
+        </div>
+      </div>
+
+      {contents.length > 0 ? (
+        <div className="grid grid-cols-1 gap-4">
+          {contents.map((content) => (
+            <ContentCard key={content.id} content={content} availableTime={time} />
+          ))}
+        </div>
+      ) : (
+        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6">
+          <EmptyState
+            title="조건에 맞는 영상을 찾지 못했어요"
+            description="시간을 늘리거나 OTT를 추가해보세요."
+          />
+          <button
+            type="button"
+            onClick={onHome}
+            className="mt-4 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-accent-red px-4 text-base font-black text-white"
+          >
+            <Home size={18} />
+            홈으로 돌아가기
+          </button>
+        </div>
+      )}
+    </section>
+  </MainLayout>
+);
 
 export default ResultPage;

@@ -8,7 +8,8 @@ export const OTT_PLATFORMS: OttPlatform[] = [
   { id: 'disneyplus', name: 'Disney+', color: '#0063E5', logoText: 'D+' },
   { id: 'tving', name: 'TVING', color: '#FF153C', logoText: 'T' },
   { id: 'wavve', name: 'Wavve', color: '#1050FF', logoText: 'W' },
-  { id: 'coupang', name: 'Coupang Play', color: '#00A1E0', logoText: 'CP' },
+  { id: 'watcha', name: 'Watcha', color: '#F45C5C', logoText: 'W' },
+  { id: 'coupangplay', name: 'Coupang Play', color: '#00A1E0', logoText: 'CP' },
 ];
 
 interface OttSelectorProps {
@@ -38,7 +39,7 @@ const OttSelector: React.FC<OttSelectorProps> = ({ selectedOtts, onChange }) => 
         </span>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         {OTT_PLATFORMS.map((platform) => (
           <OttToggleBtn
             key={platform.id}

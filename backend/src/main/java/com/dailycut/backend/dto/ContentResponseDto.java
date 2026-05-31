@@ -34,4 +34,6 @@ public class ContentResponseDto {
     private Double scoreE;
     private Double scoreU;
     private Double finalScore;
+
+    private String currentInteractionType;
 }
